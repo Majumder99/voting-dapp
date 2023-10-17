@@ -7,21 +7,31 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const Voting = await hre.ethers.getContractFactory("Voting");
+  const Voting_ = await Voting.deploy(["Rama", "Nick", "Jose"], 60);
+  await Voting_.waitForDeployment();
+  console.log("Voting deployed to:", Voting_.target);
+  saveFrontendFiles(Voting_, "Voting");
+}
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+function saveFrontendFiles(contract, name) {
+  const fs = require("fs");
+  const contractsDir = __dirname + "/../frontend/src/ContractsData";
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir);
+  }
 
-  await lock.waitForDeployment();
+  fs.writeFileSync(
+    contractsDir + `/${name}-address.json`,
+    JSON.stringify({ address: contract.address }, undefined, 2)
+  );
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
+  const contractArtifact = hre.artifacts.readArtifactSync(name);
+
+  fs.writeFileSync(
+    contractsDir + `/${name}.json`,
+    JSON.stringify(contractArtifact, null, 2)
   );
 }
 
